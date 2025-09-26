@@ -23,35 +23,35 @@ from scipy.spatial.transform import Rotation as R
 class Cassiepede(CassieEnv):
 
     def __init__(self,
-                 reward_name: str,
-                 simulator_type: str,
-                 policy_rate: int,
-                 dynamics_randomization: bool,
-                 state_noise: list | float,
-                 velocity_noise: float,
-                 state_est: bool,
-                 integral_action: bool = False,
-                 num_cassie: int = 1,
-                 position_offset: float = 0.0,
-                 poi_heading_range: float = 0.0,
-                 poi_position_offset: float = 0.0,
-                 perturbation_force: float = 0.0,
-                 perturbation_torque: float = 0.0,
-                 force_prob=0.0,
-                 cmd_noise=(0.0, 0.0, 0.0),
-                 cmd_noise_prob=0.0,
-                 state_history_size: int = 1,
-                 terrain_map=None,
-                 mask_tarsus_input=False,
-                 com_vis=False,
-                 custom_terrain=None,
-                 only_deck_force=False,
-                 height_control=False,
-                 merge_states=False,
-                 depth_input=False,
-                 enable_hfield=False,
-                 hfield_idx=0,
-                 offscreen=False):
+                reward_name: str,
+                simulator_type: str,
+                policy_rate: int,
+                dynamics_randomization: bool,
+                state_noise: list | float,
+                velocity_noise: float,
+                state_est: bool,
+                integral_action: bool = False,
+                num_cassie: int = 1,
+                position_offset: float = 0.0,
+                poi_heading_range: float = 0.0,
+                poi_position_offset: float = 0.0,
+                perturbation_force: float = 0.0,
+                perturbation_torque: float = 0.0,
+                force_prob=0.0,
+                cmd_noise=(0.0, 0.0, 0.0),
+                cmd_noise_prob=0.0,
+                state_history_size: int = 1,
+                terrain_map=None,
+                mask_tarsus_input=False,
+                com_vis=False,
+                custom_terrain=None,
+                only_deck_force=False,
+                height_control=False,
+                merge_states=False,
+                depth_input=False,
+                enable_hfield=False,
+                hfield_idx=0,
+                offscreen=False):
 
         self.num_cassie = num_cassie
         self.position_offset = position_offset
@@ -578,7 +578,7 @@ class Cassiepede(CassieEnv):
 
         return self.get_state()
 
-   
+
 
     def update_payload_mass(self):
         for i in range(self.num_cassie):

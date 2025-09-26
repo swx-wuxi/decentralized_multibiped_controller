@@ -364,7 +364,7 @@ def main():
 
                     case "r":
                         reset = True
-      
+
             episode_length += 1
 
         if not offscreen:
@@ -455,7 +455,7 @@ if __name__ == '__main__':
                         help='Number of attention heads in transformer encoder')
     parser.add_argument('--transformer_dim_feedforward', type=int, required=False,
                         help='Feedforward dimension in transformer')
-    
+
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--project_name', type=str, default='roadrunner_cassiepede')
     parser.add_argument('--runs_name', type=str, nargs='+', default=["2024-02-16 02:41:50.685098"])
