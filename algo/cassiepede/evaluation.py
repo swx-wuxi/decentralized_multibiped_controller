@@ -5,12 +5,10 @@ import time
 import numpy as np
 import torch
 
-
 from env.util.quaternion import quaternion2euler
 from util.mirror import mirror_tensor
 
-
-from env.cassie.cassiepede.cassiepede import Cassiepede
+from env.cassie.cassiepede.cassiepede import Cassiepede    # ot 定义
 
 import sys
 import tty
@@ -75,7 +73,7 @@ def main():
     env = Cassiepede(
         reward_name=args.reward_name,
         simulator_type='mujoco',
-        policy_rate=50,
+        policy_rate=50,         # 
         dynamics_randomization=True,
         # state_noise=[0.05, 0.1, 0.01, 0.2, 0.01, 0.2, 0.05, 0.05, 0.05],
         state_noise=0,
@@ -109,14 +107,14 @@ def main():
 
     if keyboard:
         tty.setcbreak(sys.stdin.fileno())
-
+    
     actors = []
     for run_name in args.runs_name:
         args_ = copy.deepcopy(args)
         args_.run_name = run_name
 
         actor = load_actor(args_, device)
-
+        print(">>> 1. Actor loaded:", actor.__class__.__name__)
         print(actor)
 
         print('actor', sum(p.numel() for p in actor.parameters()))
@@ -137,7 +135,7 @@ def main():
             actor.init_hidden_state(device=device, batch_size=batch_size * (1 + compute_mirror_loss))
 
     state = env.reset(interactive_evaluation=args.evaluation_mode != 'random')
-
+    print(">>> 2. Env reset, state keys:", state.keys())
     mirror_dict = env.get_mirror_dict()
 
     for k in mirror_dict['state_mirror_indices'].keys():
@@ -164,6 +162,7 @@ def main():
 
     if not offscreen:
         env.sim.viewer_init(record_video=record_video, overlay_text=("Wandb run(s) name:", ", ".join(args.runs_name)))
+        print(">>> 3. Viewer initialized")
         render_state = env.sim.viewer_render()
 
     done_sum = np.zeros(env.num_cassie)
@@ -183,13 +182,16 @@ def main():
             src_key_padding_mask = torch.zeros(1, 1, 1, dtype=torch.bool)
         else:
             src_key_padding_mask = torch.zeros(1, 1, env.num_cassie, dtype=torch.bool)
-
+    ###################################The core loop starts ########################################
+    ###################################The core loop########################################
+    ###################################The core loop########################################
     while render_state:
+        # print(">>> Loop start, paused =", env.sim.viewer_paused())
         start_time = time.time()
         if offscreen or not env.sim.viewer_paused():
-
+            # print("====The simulation starts====")
             state_ = OrderedDict()
-            # Numpy to tensor
+            # Step1. Numpy to tensor
             for k in state.keys():
                 state_[k] = torch.tensor(state[k], dtype=torch.float32, device=device)
 
@@ -205,6 +207,7 @@ def main():
 
                     state_[k] = torch.cat([state_[k], s_mirrored], dim=0)
 
+            # Step2. Actors predict the behavior
             actions = []
 
             for i, actor in enumerate(actors):
@@ -272,8 +275,10 @@ def main():
                 elif episode_length == single_windowed_force[1]:
                     apply_linear_perturbation(env, 0)
 
+            # Step3. Implement the physical simulation (IMPORTANT)
             state, reward, done, info = env.step(action)
-
+            
+            # Step4. Compute the reward 
             total_reward += reward
 
             for i in range(env.num_cassie):
@@ -286,7 +291,9 @@ def main():
                         episode_reward[reward_key] += reward_val
 
             done_sum += done
-
+            
+            # Step5. Read the keyboard
+            ###### Let the agents get close to the set velocity
             if keyboard and sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
                 input_char = sys.stdin.read(1)
                 print('input_char:', input_char)
@@ -366,7 +373,8 @@ def main():
                         reset = True
 
             episode_length += 1
-
+        
+        # If the screen is not off, continue the loop 
         if not offscreen:
             render_state = env.sim.viewer_render()
 
@@ -376,23 +384,25 @@ def main():
 
         if done.any():
             print('done', done, info.get('done_info', None))
-
+        
+        # Reset the loop 
         if (done.any() and done_enable) or reset or episode_length >= args.time_horizon:
             reset = False
             poi_idx = 0
 
             logging.info(
-                f'Total reward dict:{episode_reward}\n'
-                f'Total reward raw:{episode_reward_raw}\n'
-                f'Total reward (all cassie): {np.sum(list(episode_reward.values()))}\n'
-                f'Total reward:{total_reward}\nEpisode length:{episode_length}\n'
-                f'Encoding: {env.encoding}\n'
+                f'Total reward dict:{episode_reward}\n'   # The total reward in the paper (use weights)
+                f'Total reward raw:{episode_reward_raw}\n'   # physical reward (no weights)     
+                f'Total reward (all cassie): {np.sum(list(episode_reward.values()))}\n'  # a single number
+                f'Total reward:{total_reward}\nEpisode length:{episode_length}\n'  # Each robot reward 
+                f'Encoding: {env.encoding}\n'     # The positon of all robots
                 f'force_vector={(env.force_vector, np.linalg.norm(env.force_vector)) if hasattr(env, "force_vector") else None}\n'
                 f'torque_vector={(env.torque_vector, np.linalg.norm(env.torque_vector)) if hasattr(env, "force_vector") else None}\n'
                 f'Total power per step={total_power / episode_length}\n'
                 f'done_info={info.get("done_info", None)}\n'
-                f'single_windowed_force={single_windowed_force}\n')
-
+                f'single_windowed_force={single_windowed_force}\n')  
+            
+            # How far does the agents go (distance)
             logging.info(f'odometry: {env.get_poi_position() - initial_poi_position}')
 
             rem_rotation = (args.time_horizon - episode_length) * env.turn_rate_poi[0] / env.default_policy_rate
@@ -421,8 +431,8 @@ def main():
                 env.y_velocity_poi = np.zeros(env.num_cassie, dtype=float)
                 env.turn_rate_poi = np.zeros(env.num_cassie, dtype=float)
                 env.height_base = np.full(env.num_cassie, 0.75, dtype=float)
-
-            print('commands:', env.x_velocity_poi, env.y_velocity_poi, env.turn_rate_poi)
+            
+            print('commands:', env.x_velocity_poi, env.y_velocity_poi, env.turn_rate_poi) 
             episode_length = 0
             episode_reward.clear()
 
@@ -438,7 +448,7 @@ def main():
                     env.sim.init_renderer(offscreen=env.offscreen,
                                           width=env.depth_image_dim[0], height=env.depth_image_dim[1])
 
-
+###################################The core loop ends here########################################
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("Hyperparameters Setting for PPO")
 
