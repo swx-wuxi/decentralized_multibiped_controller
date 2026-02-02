@@ -1,8 +1,10 @@
+# 00. 基本操作步骤
 1. 在windows 桌面找到Ubuntu
 2. 打开终端，进入那个/decentralized文件夹，然后code . 
 3. 打开VSCODE界面，然后激活 decmbc的环境（重要）
 4. 最后，按照README最后的指令执行即可
 5. 执行完以后，按stty echo 恢复，要熟练这边不会显示（重点）
+6. 桌面路径： /mnt/c/Users/34762/Desktop （可以复制一点东西过来）
 #### 否则，命令可以输入但是输入什么都不显示(未知原因)
 
 # 1. 查看conda中的虚拟环境
@@ -10,7 +12,7 @@ conda env list
 
 # 2. 查看当前python的路径
 which python 
-
+git pull --rebase origin main # 在推送之前加的命令
 # 3. 常见命令
 Space ----> 取消暂停状态
 

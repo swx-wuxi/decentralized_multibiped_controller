@@ -8,7 +8,7 @@ import torch
 from env.util.quaternion import quaternion2euler
 from util.mirror import mirror_tensor
 
-from env.cassie.cassiepede.cassiepede import Cassiepede    # ot 定义
+from env.cassie.cassiepede.cassiepede import Cassiepede    # envrionment
 
 import sys
 import tty
@@ -18,7 +18,7 @@ import torch.nn.functional as F
 
 logging.basicConfig(level=logging.INFO)
 
-
+EPISODE_NUMBER = 10 #  Define the number of episodes for evaluation
 def apply_linear_perturbation(env, magnitude):
     if magnitude == 0:
         # Save computation
@@ -52,7 +52,7 @@ def main():
     else:
         device = torch.device('cpu')
 
-    keyboard = True
+    keyboard = False   # True: use keyboard to control the command of cassiepede
     offscreen = False
     legacy_actor = False
     dummy_actor = False
@@ -96,7 +96,7 @@ def main():
         state_history_size=args.state_history_size,
         cmd_noise_prob=args.cmd_noise_prob,
         mask_tarsus_input=args.mask_tarsus_input,
-        enable_hfield=args.terrain >= 0,
+        enable_hfield=args.terrain >= 0,  # If terrain index>=0 , enable hfield
         hfield_idx=args.terrain,
         offscreen=offscreen)
 
@@ -109,6 +109,7 @@ def main():
         tty.setcbreak(sys.stdin.fileno())
     
     actors = []
+    ####### Load actors(Core part) #######
     for run_name in args.runs_name:
         args_ = copy.deepcopy(args)
         args_.run_name = run_name
@@ -120,6 +121,7 @@ def main():
         print('actor', sum(p.numel() for p in actor.parameters()))
 
         actors.append(actor)
+    ####### Load actors(Core part) #######
 
     batch_size = (1 if len(actors) > 1 else (1 if env._merge_states else env.num_cassie))
 
@@ -146,17 +148,29 @@ def main():
     mirror_dict['action_mirror_indices'] = torch.tensor(mirror_dict['action_mirror_indices'],
                                                         dtype=torch.float32,
                                                         device=device)
+   
+    # match args.evaluation_mode:
+        # case 'interactive':
+        #     env.x_velocity_poi = np.zeros(env.num_cassie, dtype=float)
+        #     env.y_velocity_poi = np.zeros(env.num_cassie, dtype=float)
+        #     env.turn_rate_poi = np.zeros(env.num_cassie, dtype=float)
+        #     env.height_base = np.full(env.num_cassie, 0.75, dtype=float)
+        # case 'random':
+        #     pass
+        # case _:
+        #     raise NotImplementedError
 
-    match args.evaluation_mode:
-        case 'interactive':
-            env.x_velocity_poi = np.zeros(env.num_cassie, dtype=float)
-            env.y_velocity_poi = np.zeros(env.num_cassie, dtype=float)
-            env.turn_rate_poi = np.zeros(env.num_cassie, dtype=float)
-            env.height_base = np.full(env.num_cassie, 0.75, dtype=float)
-        case 'random':
-            pass
-        case _:
-            raise NotImplementedError
+    ##################Modify the initial command here##################
+    initial_poi_position = env.get_poi_position().copy()
+    print("initial_poi_position:", initial_poi_position)
+    init_yaw = quaternion2euler(np.array([env.get_poi_orientation()]))[0, -1]  # rad
+    print("initial_poi_yaw (deg):", np.degrees(init_yaw))
+
+    env.x_velocity_poi[:] = 1.0
+    env.y_velocity_poi[:] = 0.0
+    env.turn_rate_poi[:] = np.radians(5)  # 15 deg/s
+    env.height_base[:] = 0.75
+    ##################Modify the initial command here##################
 
     render_state = offscreen
 
@@ -175,8 +189,8 @@ def main():
 
     total_power = np.zeros(env.num_cassie, dtype=float)
 
-    initial_poi_position = env.get_poi_position().copy()
-
+   
+    fail_episode_num = 0 # calculate the number of failed episodes
     if any(['Transformer' in actor.__class__.__name__ for actor in actors]):
         if len(actors) > 1:
             src_key_padding_mask = torch.zeros(1, 1, 1, dtype=torch.bool)
@@ -185,10 +199,16 @@ def main():
     ###################################The core loop starts ########################################
     ###################################The core loop########################################
     ###################################The core loop########################################
-    while render_state:
+    episode_number = 1
+    odemetry_x_list = []
+    odemetry_y_list = []
+    odemetry_yaw_list = []
+    while render_state and episode_number<=EPISODE_NUMBER:
         # print(">>> Loop start, paused =", env.sim.viewer_paused())
+        
         start_time = time.time()
         if offscreen or not env.sim.viewer_paused():
+            
             # print("====The simulation starts====")
             state_ = OrderedDict()
             # Step1. Numpy to tensor
@@ -277,6 +297,7 @@ def main():
 
             # Step3. Implement the physical simulation (IMPORTANT)
             state, reward, done, info = env.step(action)
+           
             
             # Step4. Compute the reward 
             total_reward += reward
@@ -292,7 +313,8 @@ def main():
 
             done_sum += done
             
-            # Step5. Read the keyboard
+            # Step5. Read the keyboard(If Keyboard = False, Useless)
+            #############################If Keyboard = False, Useless#############################
             ###### Let the agents get close to the set velocity
             if keyboard and sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
                 input_char = sys.stdin.read(1)
@@ -373,7 +395,8 @@ def main():
                         reset = True
 
             episode_length += 1
-        
+            #############################If Keyboard = False, Useless#############################
+            
         # If the screen is not off, continue the loop 
         if not offscreen:
             render_state = env.sim.viewer_render()
@@ -383,14 +406,15 @@ def main():
             time.sleep(delaytime)
 
         if done.any():
-            print('done', done, info.get('done_info', None))
-        
-        # Reset the loop 
-        if (done.any() and done_enable) or reset or episode_length >= args.time_horizon:
+            print('Step done', done, info.get('done_info', None))
+            
+        # 6. Reset the loop (IMPORTANT) (If errors happen, reset the environment)
+        if (done.any()) or reset or episode_length >= args.time_horizon:
             reset = False
             poi_idx = 0
-
+            
             logging.info(
+                f"==== =====Episode {episode_number} summarisation===== ====\n"
                 f'Total reward dict:{episode_reward}\n'   # The total reward in the paper (use weights)
                 f'Total reward raw:{episode_reward_raw}\n'   # physical reward (no weights)     
                 f'Total reward (all cassie): {np.sum(list(episode_reward.values()))}\n'  # a single number
@@ -402,13 +426,33 @@ def main():
                 f'done_info={info.get("done_info", None)}\n'
                 f'single_windowed_force={single_windowed_force}\n')  
             
-            # How far does the agents go (distance)
-            logging.info(f'odometry: {env.get_poi_position() - initial_poi_position}')
+            # if not (done.any() and done_enable):
+            if not done.any(): 
+                # How far does the agents go (distance)
+                odometry = env.get_poi_position() - initial_poi_position
+                logging.info(f'odometry: {env.get_poi_position() - initial_poi_position}')
+                odemetry_x_list.append(odometry[0])
+                odemetry_y_list.append(odometry[1])
+                rem_rotation = (args.time_horizon - episode_length) * env.turn_rate_poi[0] / env.default_policy_rate
 
-            rem_rotation = (args.time_horizon - episode_length) * env.turn_rate_poi[0] / env.default_policy_rate
+                # quaternion2euler: get the euler angle from quaternion (yaw angle)
+                # Output unit: degreesc
+                orientation_error = (quaternion2euler(np.array([env.get_poi_orientation()]))[0, -1] - env.orient_add[0] - rem_rotation + np.pi) % (2 * np.pi) - np.pi
+                odemetry_yaw_list.append(np.degrees(orientation_error))
+                
+                logging.info(
+                    f'orientation error: {np.degrees(orientation_error)} degress, '
+                    f'rem_rotation: {np.degrees(rem_rotation)} env.orient_add[0]={np.degrees(env.orient_add[0])}, '
+                    f'current_orientation={np.degrees(quaternion2euler(np.array([env.get_poi_orientation()]))[0, -1])}'
+                    )
+            else:
+                fail_episode_num += 1
+                logging.info('Episode ended with done signal, Fail!!!! No odometry recorded.')
 
-            logging.info(
-                f'orientation error: {np.degrees((quaternion2euler(np.array([env.get_poi_orientation()]))[0, -1] - env.orient_add[0] - rem_rotation + np.pi) % (2 * np.pi) - np.pi)}, rem_rotation: {np.degrees(rem_rotation)} env.orient_add[0]={np.degrees(env.orient_add[0])}, current_orientation={np.degrees(quaternion2euler(np.array([env.get_poi_orientation()]))[0, -1])}')
+            # initial_poi_position = env.get_poi_position().copy()
+            # print("initial_poi_position:", initial_poi_position)
+            # init_yaw = quaternion2euler(np.array([env.get_poi_orientation()]))[0, -1]  # rad
+            # print("initial_poi_yaw (deg):", np.degrees(init_yaw))
 
             episode_reward.clear()
             episode_reward_raw.clear()
@@ -426,13 +470,18 @@ def main():
 
             initial_poi_position = env.get_poi_position().copy()
 
-            if args.evaluation_mode == 'interactive':
-                env.x_velocity_poi = np.zeros(env.num_cassie, dtype=float)
-                env.y_velocity_poi = np.zeros(env.num_cassie, dtype=float)
-                env.turn_rate_poi = np.zeros(env.num_cassie, dtype=float)
-                env.height_base = np.full(env.num_cassie, 0.75, dtype=float)
+            # if args.evaluation_mode == 'interactive':
+            #     env.x_velocity_poi = np.zeros(env.num_cassie, dtype=float)
+            #     env.y_velocity_poi = np.zeros(env.num_cassie, dtype=float)
+            #     env.turn_rate_poi = np.zeros(env.num_cassie, dtype=float)
+            #     env.height_base = np.full(env.num_cassie, 0.75, dtype=float)
             
+            env.x_velocity_poi[:] = 1.0
+            env.y_velocity_poi[:] = 0.0
+            env.turn_rate_poi[:] = np.radians(5)  # 15 deg/s
+            env.height_base[:] = 0.75
             print('commands:', env.x_velocity_poi, env.y_velocity_poi, env.turn_rate_poi) 
+            # print("(EVAL) Payload mass in next episode=", env._connector_mass)
             episode_length = 0
             episode_reward.clear()
 
@@ -447,7 +496,18 @@ def main():
                     env.sim.renderer.close()
                     env.sim.init_renderer(offscreen=env.offscreen,
                                           width=env.depth_image_dim[0], height=env.depth_image_dim[1])
-
+            print("===================================================================")        
+            episode_number += 1
+           
+    # initial_poi_position = env.get_poi_position().copy()
+    # print("initial_poi_position:", initial_poi_position)
+    # init_yaw = quaternion2euler(np.array([env.get_poi_orientation()]))[0, -1]  # rad
+    # print("initial_poi_yaw (deg):", np.degrees(init_yaw))
+    logging.info(f'Finished {EPISODE_NUMBER} episodes')
+    logging.info(f'The mean of Odometry x : {np.mean(odemetry_x_list)}')
+    logging.info(f'The mean of Odometry y : {np.mean(odemetry_y_list)}')
+    logging.info(f'The mean of Odometry yaw : {np.mean(odemetry_yaw_list)} degrees')
+    logging.info(f"Failure rate: {(fail_episode_num/EPISODE_NUMBER)*100:.2f} % ")
 ###################################The core loop ends here########################################
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("Hyperparameters Setting for PPO")
@@ -497,3 +557,5 @@ if __name__ == '__main__':
     assert len(args.runs_name) == 1 or len(args.num_cassie_prob) == len(args.runs_name)
 
     main()
+
+    

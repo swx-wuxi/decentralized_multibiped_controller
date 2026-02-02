@@ -577,24 +577,40 @@ class Cassiepede(CassieEnv):
                            self.observation_size.items()}
 
         return self.get_state()
+    
+    #  Payload mass setting function
+    # def update_payload_mass(self):
+    #     for i in range(self.num_cassie):
+    #         if self.num_cassie == 2 and i > 0:
+    #             break
 
+    #         j = (i + 1) % self.num_cassie
+    #         connector_name = f'connector_{i + 1}_{j + 1}'
 
+    #         self._connector_mass = np.random.uniform(*self._randomize_payload_mass_bounds)
 
+    #         self.sim.set_body_mass(self._connector_mass, connector_name)
+
+    #         # Recompute inertia manually
+    #         self.recompute_inertia(connector_name)
+
+    # 复现论文：每个连接器5kg，总共20kg
     def update_payload_mass(self):
-        for i in range(self.num_cassie):
-            if self.num_cassie == 2 and i > 0:
-                break
+        if self.num_cassie == 4:
+            # === paper reproduction: total payload = 20 kg ===
+            total_payload_mass = 20.0
+            per_connector_mass = total_payload_mass / 4.0  # 20 kg
 
-            j = (i + 1) % self.num_cassie
-            connector_name = f'connector_{i + 1}_{j + 1}'
+            self._connector_mass = per_connector_mass
 
-            self._connector_mass = np.random.uniform(*self._randomize_payload_mass_bounds)
+            for i in range(self.num_cassie):
+                j = (i + 1) % self.num_cassie
+                connector_name = f'connector_{i + 1}_{j + 1}'
 
-            self.sim.set_body_mass(self._connector_mass, connector_name)
-
-            # Recompute inertia manually
-            self.recompute_inertia(connector_name)
-
+                self.sim.set_body_mass(per_connector_mass, connector_name)
+                self.recompute_inertia(connector_name)
+            return
+        
     def step(self, action: np.ndarray):
         if self._merge_states:
             action = action.reshape(self.num_cassie, -1)
