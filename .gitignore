@@ -131,7 +131,6 @@ algo/old_files
 *.sh
 
 saved_models/
-checkpoints/
 training_logs/
 
 *.csv

@@ -15,6 +15,7 @@ import tty
 import select
 from algo.common.utils import *
 import torch.nn.functional as F
+import csv
 
 logging.basicConfig(level=logging.INFO)
 
@@ -51,7 +52,20 @@ def main():
         device = torch.device('cuda')
     else:
         device = torch.device('cpu')
+    
+    # ========= create CSV =========
+    log_dir = "eval_logs"
+    os.makedirs(log_dir, exist_ok=True)
 
+    log_path = os.path.join(log_dir, "log.csv")
+    csv_file = open(log_path, "w", newline="")
+    csv_writer = csv.writer(csv_file)
+
+    csv_writer.writerow([
+        "episode","step","target_yaw","current_yaw",
+        "pos_x","pos_y","delta_x","delta_y","done"
+    ])
+    
     keyboard = False   # True: use keyboard to control the command of cassiepede
     offscreen = False
     legacy_actor = False
@@ -166,10 +180,10 @@ def main():
     init_yaw = quaternion2euler(np.array([env.get_poi_orientation()]))[0, -1]  # rad
     print("initial_poi_yaw (deg):", np.degrees(init_yaw))
 
-    env.x_velocity_poi[:] = 1.0
+    env.x_velocity_poi[:] = 0.0
     env.y_velocity_poi[:] = 0.0
-    env.turn_rate_poi[:] = np.radians(5)  # 15 deg/s
-    env.height_base[:] = 0.75
+    env.turn_rate_poi[:] = np.radians(10)  # 15 deg/s
+    env.height_base[:] = 0
     ##################Modify the initial command here##################
 
     render_state = offscreen
@@ -208,8 +222,6 @@ def main():
         
         start_time = time.time()
         if offscreen or not env.sim.viewer_paused():
-            
-            # print("====The simulation starts====")
             state_ = OrderedDict()
             # Step1. Numpy to tensor
             for k in state.keys():
@@ -297,8 +309,25 @@ def main():
 
             # Step3. Implement the physical simulation (IMPORTANT)
             state, reward, done, info = env.step(action)
-           
+
+            target_yaw = env.orient_add[0]
+            current_yaw = quaternion2euler(np.array([env.get_poi_orientation()]))[0, -1]
+            poi_pos = env.get_poi_position()
+            pos_x, pos_y = float(poi_pos[0]), float(poi_pos[1])
+            delta_x = pos_x - float(initial_poi_position[0])
+            delta_y = pos_y - float(initial_poi_position[1])
             
+            csv_writer.writerow([
+                int(episode_number),
+                int(episode_length),
+                target_yaw,
+                current_yaw,
+                pos_x,
+                pos_y,
+                delta_x,
+                delta_y,
+                done
+            ])
             # Step4. Compute the reward 
             total_reward += reward
 
@@ -396,7 +425,8 @@ def main():
 
             episode_length += 1
             #############################If Keyboard = False, Useless#############################
-            
+          
+        
         # If the screen is not off, continue the loop 
         if not offscreen:
             render_state = env.sim.viewer_render()
@@ -407,30 +437,15 @@ def main():
 
         if done.any():
             print('Step done', done, info.get('done_info', None))
-            
+           
         # 6. Reset the loop (IMPORTANT) (If errors happen, reset the environment)
         if (done.any()) or reset or episode_length >= args.time_horizon:
             reset = False
             poi_idx = 0
             
-            logging.info(
-                f"==== =====Episode {episode_number} summarisation===== ====\n"
-                f'Total reward dict:{episode_reward}\n'   # The total reward in the paper (use weights)
-                f'Total reward raw:{episode_reward_raw}\n'   # physical reward (no weights)     
-                f'Total reward (all cassie): {np.sum(list(episode_reward.values()))}\n'  # a single number
-                f'Total reward:{total_reward}\nEpisode length:{episode_length}\n'  # Each robot reward 
-                f'Encoding: {env.encoding}\n'     # The positon of all robots
-                f'force_vector={(env.force_vector, np.linalg.norm(env.force_vector)) if hasattr(env, "force_vector") else None}\n'
-                f'torque_vector={(env.torque_vector, np.linalg.norm(env.torque_vector)) if hasattr(env, "force_vector") else None}\n'
-                f'Total power per step={total_power / episode_length}\n'
-                f'done_info={info.get("done_info", None)}\n'
-                f'single_windowed_force={single_windowed_force}\n')  
-            
-            # if not (done.any() and done_enable):
             if not done.any(): 
                 # How far does the agents go (distance)
                 odometry = env.get_poi_position() - initial_poi_position
-                logging.info(f'odometry: {env.get_poi_position() - initial_poi_position}')
                 odemetry_x_list.append(odometry[0])
                 odemetry_y_list.append(odometry[1])
                 rem_rotation = (args.time_horizon - episode_length) * env.turn_rate_poi[0] / env.default_policy_rate
@@ -441,9 +456,22 @@ def main():
                 odemetry_yaw_list.append(np.degrees(orientation_error))
                 
                 logging.info(
+                    f"==== =====Episode {episode_number} summarisation===== ====\n"
+                    f'odometry: {env.get_poi_position() - initial_poi_position}'
                     f'orientation error: {np.degrees(orientation_error)} degress, '
                     f'rem_rotation: {np.degrees(rem_rotation)} env.orient_add[0]={np.degrees(env.orient_add[0])}, '
                     f'current_orientation={np.degrees(quaternion2euler(np.array([env.get_poi_orientation()]))[0, -1])}'
+
+                    f'Total reward dict:{episode_reward}\n'   # The total reward in the paper (use weights)
+                    f'Total reward raw:{episode_reward_raw}\n'   # physical reward (no weights)     
+                    f'Total reward (all cassie): {np.sum(list(episode_reward.values()))}\n'  # a single number
+                    f'Total reward:{total_reward}\nEpisode length:{episode_length}\n'  # Each robot reward 
+                    f'Encoding: {env.encoding}\n'     # The positon of all robots
+                    f'force_vector={(env.force_vector, np.linalg.norm(env.force_vector)) if hasattr(env, "force_vector") else None}\n'
+                    f'torque_vector={(env.torque_vector, np.linalg.norm(env.torque_vector)) if hasattr(env, "force_vector") else None}\n'
+                    f'Total power per step={total_power / episode_length}\n'
+                    f'done_info={info.get("done_info", None)}\n'
+                    f'single_windowed_force={single_windowed_force}\n'
                     )
             else:
                 fail_episode_num += 1
@@ -476,9 +504,9 @@ def main():
             #     env.turn_rate_poi = np.zeros(env.num_cassie, dtype=float)
             #     env.height_base = np.full(env.num_cassie, 0.75, dtype=float)
             
-            env.x_velocity_poi[:] = 1.0
+            env.x_velocity_poi[:] = 0.0
             env.y_velocity_poi[:] = 0.0
-            env.turn_rate_poi[:] = np.radians(5)  # 15 deg/s
+            env.turn_rate_poi[:] = np.radians(10)  # 15 deg/s
             env.height_base[:] = 0.75
             print('commands:', env.x_velocity_poi, env.y_velocity_poi, env.turn_rate_poi) 
             # print("(EVAL) Payload mass in next episode=", env._connector_mass)
@@ -503,6 +531,9 @@ def main():
     # print("initial_poi_position:", initial_poi_position)
     # init_yaw = quaternion2euler(np.array([env.get_poi_orientation()]))[0, -1]  # rad
     # print("initial_poi_yaw (deg):", np.degrees(init_yaw))
+
+    csv_file.close()
+    print("Log saved to:", log_path)
     logging.info(f'Finished {EPISODE_NUMBER} episodes')
     logging.info(f'The mean of Odometry x : {np.mean(odemetry_x_list)}')
     logging.info(f'The mean of Odometry y : {np.mean(odemetry_y_list)}')
