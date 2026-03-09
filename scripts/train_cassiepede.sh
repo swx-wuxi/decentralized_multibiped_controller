@@ -1,16 +1,19 @@
 export PYTHONPATH=.
-export WANDB_API_KEY="<your wandb api key goes here>"
+export WANDB_MODE=offline
+
 python algo/cassiepede/trainer.py \
-  --n_collectors 120 \
+  --max_steps 2000 \
+  --model_save_steps 1000 \
+  --n_collectors 1 \
   --n_evaluators 0 \
-  --time_horizon 500 \
-  --buffer_size 60000 \
-  --eval_buffer_size 3000 \
-  --evaluate_freq 4 \
-  --num_epoch 5 \
-  --mini_batch_size 32 \
-  --lstm_hidden_dim 64 \
-  --lstm_num_layers 2 \
+  --time_horizon 50 \
+  --buffer_size 200 \
+  --eval_buffer_size 50 \
+  --evaluate_freq 1 \
+  --num_epoch 1 \
+  --mini_batch_size 8 \
+  --lstm_hidden_dim 32 \
+  --lstm_num_layers 1 \
   --use_orthogonal_init \
   --set_adam_eps \
   --use_adv_norm \
@@ -18,7 +21,7 @@ python algo/cassiepede/trainer.py \
   --use_grad_clip \
   --reward_name locomotion_cassiepede_feetairtime_modified \
   --project_name roadrunner_cassiepede \
-  --device cuda:0 \
+  --device cpu \
   --position_offset 1.0 \
   --poi_heading_range 1.05 \
   --poi_position_offset 1.5 \
@@ -29,12 +32,12 @@ python algo/cassiepede/trainer.py \
   --force_prob 0.1 \
   --cmd_noise 0.0 0.0 0.0 \
   --cmd_noise_prob 0.0 \
-  --wandb_mode online \
+  --wandb_mode offline \
   --std 0.13 \
   --state_history_size 1 \
   --gamma 0.95 \
   --actor_name Actor_LSTM_v2 \
-  --actor_name Actor_LSTM_v2 \
+  --critic_name Critic_LSTM_v2 \
   --kl_check_min_itr 2 \
   --kl_check \
-  --mirror_loss supervised 
+  --mirror_loss supervised

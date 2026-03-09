@@ -346,7 +346,10 @@ def main():
 
     pbar_total_steps.close()
     pbar_evaluator.close()
-    [pc.close() for pc in pbar_collector]
+    # [pc.close() for pc in pbar_collector]
+    for pc in pbar_collector:
+        if hasattr(pc, "close"):
+            pc.close()
     logging.info('Training done')
     run.finish()
 
@@ -446,7 +449,7 @@ if __name__ == "__main__":
 # export WANDB_API_KEY=
 # python algo/cassiepede/training.py \
 #   --n_collectors 120 \
-#   --n_evaluators 6 \
+#   --n_evaluators 6/0 \
 #   --time_horizon 500 \
 #   --buffer_size 60000 \
 #   --eval_buffer_size 3000 \
