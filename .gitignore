@@ -137,6 +137,6 @@ training_logs/
 *.png
 *.pdf
 *.ipynb
-*.pt
+# *.pt
 *.npy
 algo/cassiepede/benchmark/data
