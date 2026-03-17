@@ -7,7 +7,7 @@ import tqdm
 from algo.common.ppo_algo import PPO_algo
 from algo.common.utils import *
 from env.cassie.cassiepede.cassiepede import Cassiepede
-
+import time
 
 def main():
     torch.manual_seed(args.seed)
@@ -48,7 +48,7 @@ def main():
         cmd_noise_prob=args.cmd_noise_prob,
         mask_tarsus_input=args.mask_tarsus_input,
         enable_hfield=False,
-        offscreen=False)
+        offscreen=True,)
 
     env = env_fn(num_cassie=np.nonzero(args.num_cassie_prob)[0][0] + 1)
 
@@ -84,6 +84,14 @@ def main():
 
     args.num_param_actor = sum(p.numel() for p in agent.actor.parameters())
     args.num_param_critic = sum(p.numel() for p in agent.critic.parameters())
+
+    ######## Print usage of GPU #########
+    print("device arg:", args.device)
+    print("torch cuda available:", torch.cuda.is_available())
+    print("dev_gpu:", dev_gpu)
+    print("actor device:", next(agent.actor.parameters()).device)
+    print("critic device:", next(agent.critic.parameters()).device)
+    ######## Print usage of GPU #########
 
     logging.info(args)
 
@@ -151,6 +159,7 @@ def main():
 
         """Collect data"""
         # logging.debug("Collecting")
+        t_collect_start = time.time()
         time_collecting = datetime.datetime.now()
 
         # Copy the latest actor to all collectors
@@ -230,6 +239,8 @@ def main():
 
                     if len(collector_ids) == 0:
                         time_collecting = datetime.datetime.now() - time_collecting
+                        collect_time_sec = time.time() - t_collect_start
+                        print(f"[PROFILE] collect time: {collect_time_sec:.3f}s")
 
         [ray.cancel(c) for c in list(collector_ids.values()) + list(evaluator_ids.values())]
 
@@ -283,11 +294,19 @@ def main():
         logging.debug("Training")
         time_training = datetime.datetime.now()
 
+        # ===== PROFILE: training wall time start =====
+        t_train_start = time.time()
+        # ===== PROFILE END =====
+
         batch = get_batched_episodes(episodes)
 
         actor_loss, entropy_loss, mirror_loss, critic_loss, kl, num_batches, train_epoch = \
             agent.update(batch, total_steps, check_kl=args.kl_check_min_itr <= iterations)
-
+        
+        # ===== PROFILE: make GPU timing accurate =====
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        # ===== PROFILE END =====
         pbar_total_steps.update(buffer_size)
 
         # Copy updated models to global models
@@ -295,7 +314,16 @@ def main():
         update_model(critic_global, agent.critic.parameters())
 
         time_training = datetime.datetime.now() - time_training
+        
+        # ===== PROFILE: training wall time end =====
+        train_time_sec = time.time() - t_train_start
+        print(f"[PROFILE] update time: {train_time_sec:.3f}s")
 
+        if torch.cuda.is_available():
+            print(f"[PROFILE] gpu allocated: {torch.cuda.memory_allocated()/1024**2:.1f} MB")
+            print(f"[PROFILE] gpu reserved : {torch.cuda.memory_reserved()/1024**2:.1f} MB")
+        # ===== PROFILE END =====
+        
         log = {'train/actor_loss': actor_loss,
                'train/entropy_loss': entropy_loss,
                'train/mirror_loss': mirror_loss,
