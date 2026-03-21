@@ -21,7 +21,8 @@ def main():
     args.device = dev_gpu.__str__()
 
     custom_terrain = None
-
+    
+    ###### 1. Create the envrionment function. 
     env_fn = lambda num_cassie: Cassiepede(
         reward_name=args.reward_name,
         simulator_type='mujoco',
@@ -76,7 +77,8 @@ def main():
                                                             device=dev_gpu)
     else:
         mirror_dict = None
-
+    
+    ##### 2. Create the PPO agent. 
     agent = PPO_algo(args, device=dev_gpu, mirror_dict=mirror_dict)
     #
     # args.actor_name = agent.actor.__class__.__name__
@@ -111,7 +113,8 @@ def main():
     critic_global = deepcopy(agent.critic).to(dev_cpu)
 
     logging.info(f'Parameters, actor: {args.num_param_actor}, critic: {args.num_param_critic}')
-
+    
+    # ###Create collector and evaluator workers.
     collectors = [Worker.remote(env_fn, actor_global, args, dev_cpu, i) for i in range(args.n_collectors)]
 
     evaluators = [Worker.remote(env_fn, actor_global, args, dev_cpu, i) for i in range(args.n_evaluators)]
@@ -137,7 +140,8 @@ def main():
                               colour='blue')
         for i, num_cassie in enumerate(target_buffer_sizes.keys())
     }
-
+    
+    print("阮中乐好可爱")
     while total_steps < args.max_steps:
         actor_param_id = ray.put(list(actor_global.parameters()))
 
@@ -472,12 +476,12 @@ if __name__ == "__main__":
 
     main()
 
-# Example Run script
+# Example Run script (in demo scripts)
 # export PYTHONPATH=.
 # export WANDB_API_KEY=
 # python algo/cassiepede/training.py \
 #   --n_collectors 120 \
-#   --n_evaluators 6/0 \
+#   --n_evaluators 6 \
 #   --time_horizon 500 \
 #   --buffer_size 60000 \
 #   --eval_buffer_size 3000 \

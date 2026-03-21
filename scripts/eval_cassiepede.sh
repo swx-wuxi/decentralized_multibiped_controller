@@ -12,7 +12,7 @@ python algo/cassiepede/evaluation.py \
   --perturbation_force 0.0 \
   --perturbation_torque 0.0 \
   --force_prob 0.0 \
-  --runs_name "2024-05-01 10_30_51.809112" \
+  --runs_name "2026-03-21 12_46_34.303544" \
   --model_checkpoint latest \
   --evaluation_mode "interactive" \
   --state_history_size 1 \

@@ -272,12 +272,16 @@ def load_actor(args, device):
 
     with open(config_path, 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
+    # 把 wandb 导出的 {value: ...} 结构拍平
+    for k, v in list(config.items()):
+        if isinstance(v, dict) and 'value' in v and len(v) == 1:
+            config[k] = v['value']
 
     args = argparse.Namespace(**{**config, **{k: v for k, v in vars(args).items() if v is not None}})
 
     logging.info(f'Checkpoint loading from: {args.run_name}')
 
-    MODEL_CLASS = getattr(module, config['actor_name'])
+    MODEL_CLASS = getattr(module, args.actor_name)
 
     model = MODEL_CLASS(args)
 

@@ -182,7 +182,7 @@ def main():
 
     env.x_velocity_poi[:] = 0.0
     env.y_velocity_poi[:] = 0.0
-    env.turn_rate_poi[:] = np.radians(10)  # 15 deg/s
+    env.turn_rate_poi[:] = np.radians(0)  # 15 deg/s
     env.height_base[:] = 0
     ##################Modify the initial command here##################
 
@@ -506,7 +506,7 @@ def main():
             
             env.x_velocity_poi[:] = 0.0
             env.y_velocity_poi[:] = 0.0
-            env.turn_rate_poi[:] = np.radians(10)  # 15 deg/s
+            env.turn_rate_poi[:] = np.radians(0)  # 15 deg/s
             env.height_base[:] = 0.75
             print('commands:', env.x_velocity_poi, env.y_velocity_poi, env.turn_rate_poi) 
             # print("(EVAL) Payload mass in next episode=", env._connector_mass)

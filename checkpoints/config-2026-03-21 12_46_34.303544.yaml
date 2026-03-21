@@ -1,0 +1,282 @@
+_wandb:
+    value:
+        cli_version: 0.25.1
+        e:
+            4c88jktpfada1j38ftplrx7gituictu3:
+                args:
+                    - --n_collectors
+                    - "8"
+                    - --n_evaluators
+                    - "0"
+                    - --time_horizon
+                    - "300"
+                    - --max_steps
+                    - "100000"
+                    - --buffer_size
+                    - "8000"
+                    - --eval_buffer_size
+                    - "500"
+                    - --evaluate_freq
+                    - "10"
+                    - --num_epoch
+                    - "4"
+                    - --mini_batch_size
+                    - "64"
+                    - --hidden_dim
+                    - "64"
+                    - --lstm_hidden_dim
+                    - "64"
+                    - --lstm_num_layers
+                    - "2"
+                    - --use_orthogonal_init
+                    - --set_adam_eps
+                    - --use_adv_norm
+                    - --use_lr_decay
+                    - --use_grad_clip
+                    - --reward_name
+                    - locomotion_cassiepede_feetairtime_modified
+                    - --project_name
+                    - roadrunner_cassiepede
+                    - --device
+                    - cpu
+                    - --position_offset
+                    - "1.0"
+                    - --poi_heading_range
+                    - "1.05"
+                    - --gamma
+                    - "0.95"
+                    - --std
+                    - "0.13"
+                    - --entropy_coef
+                    - "0.01"
+                    - --num_cassie_prob
+                    - "0.2"
+                    - "0.8"
+                    - --perturbation_force
+                    - "30.0"
+                    - --force_prob
+                    - "0.2"
+                    - --cmd_noise
+                    - "0.0"
+                    - "0.0"
+                    - "0.0"
+                    - --cmd_noise_prob
+                    - "0.0"
+                    - --wandb_mode
+                    - online
+                    - --state_history_size
+                    - "1"
+                    - --actor_name
+                    - Actor_LSTM_v2
+                    - --critic_name
+                    - Critic_LSTM_v2
+                    - --kl_check_min_itr
+                    - "2"
+                    - --kl_check
+                    - --mirror_loss
+                    - supervised
+                codePath: algo/cassiepede/trainer.py
+                codePathLocal: algo/cassiepede/trainer.py
+                cpu_count: 14
+                cpu_count_logical: 14
+                disk:
+                    /:
+                        total: "1081101176832"
+                        used: "20367728640"
+                email: 3476248395swx@gmail.com
+                executable: /home/wenxuan/miniconda3/envs/decmbc/bin/python
+                git:
+                    commit: 84447e9bcd9dc4e5c7bb534866f86330d2816f6a
+                    remote: https://github.com/swx-wuxi/decentralized_multibiped_controller.git
+                host: pcswx
+                memory:
+                    total: "16469643264"
+                os: Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39
+                program: /home/wenxuan/decentralized_multibiped_controller/algo/cassiepede/trainer.py
+                python: CPython 3.12.8
+                root: /home/wenxuan/decentralized_multibiped_controller
+                startedAt: "2026-03-21T12:46:35.838953Z"
+                writerId: 4c88jktpfada1j38ftplrx7gituictu3
+        m: []
+        python_version: 3.12.8
+        t:
+            "1":
+                - 1
+                - 30
+            "2":
+                - 1
+                - 30
+            "3":
+                - 2
+                - 3
+                - 13
+                - 14
+                - 16
+                - 61
+            "4": 3.12.8
+            "5": 0.25.1
+            "12": 0.25.1
+            "13": linux-x86_64
+action_dim:
+    value: 10
+actor_name:
+    value: Actor_LSTM_v2
+buffer_size:
+    value: 8000
+checkpoint_dir:
+    value: checkpoints
+cmd_noise:
+    value:
+        - 0
+        - 0
+        - 0
+cmd_noise_prob:
+    value: 0
+critic_name:
+    value: Critic_LSTM_v2
+device:
+    value: cpu
+empty_cuda_cache:
+    value: false
+entropy_coef:
+    value: 0.01
+env_name:
+    value: Cassiepede
+eps:
+    value: 1e-05
+epsilon:
+    value: 0.2
+eval_buffer_size:
+    value: 500
+evaluate_freq:
+    value: 10
+force_prob:
+    value: 0.2
+gamma:
+    value: 0.95
+grad_clip:
+    value: 0.05
+hidden_dim:
+    value: 64
+kl_check:
+    value: true
+kl_check_min_itr:
+    value: 2
+kl_threshold:
+    value: 0.2
+lamda:
+    value: 1
+lr_a:
+    value: 0.0003
+lr_c:
+    value: 0.0003
+lstm_hidden_dim:
+    value: 64
+lstm_num_layers:
+    value: 2
+mask_tarsus_input:
+    value: false
+max_steps:
+    value: 100000
+mini_batch_size:
+    value: 64
+mirror_loss:
+    value:
+        - supervised
+model_save_steps:
+    value: 100000000
+n_collectors:
+    value: 8
+n_evaluators:
+    value: 0
+num_cassie_prob:
+    value:
+        - 0.2
+        - 0.8
+num_epoch:
+    value: 4
+num_param_actor:
+    value: 61579
+num_param_critic:
+    value: 60993
+parent_run:
+    value: "2026-03-21 12:46:34.303544"
+perturbation_force:
+    value: 30
+perturbation_torque:
+    value: 0
+poi_heading_range:
+    value: 1.05
+poi_position_offset:
+    value: 0
+position_offset:
+    value: 1
+previous_checkpoint:
+    value: null
+previous_run:
+    value: null
+project_name:
+    value: roadrunner_cassiepede
+reward_name:
+    value: locomotion_cassiepede_feetairtime_modified
+run_name:
+    value: "2026-03-21 12:46:34.303544"
+seed:
+    value: 0
+set_adam_eps:
+    value: true
+state_dim:
+    value:
+        base_ang_vel:
+            - 1
+            - 3
+        base_orient_cmd:
+            - 1
+            - 4
+        base_yaw_poi:
+            - 1
+            - 1
+        cmd:
+            - 1
+            - 4
+        encoding:
+            - 1
+            - 2
+        joint_pos:
+            - 1
+            - 4
+        joint_vel:
+            - 1
+            - 4
+        motor_pos:
+            - 1
+            - 10
+        motor_vel:
+            - 1
+            - 10
+state_history_size:
+    value: 1
+std:
+    value: 0.13
+time_horizon:
+    value: 300
+transformer_dim_feedforward:
+    value: null
+transformer_hidden_dim:
+    value: null
+transformer_num_heads:
+    value: null
+transformer_num_layers:
+    value: null
+use_adv_norm:
+    value: true
+use_grad_clip:
+    value: true
+use_lr_decay:
+    value: true
+use_orthogonal_init:
+    value: true
+use_reward_scaling:
+    value: false
+wandb_mode:
+    value: online
