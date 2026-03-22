@@ -140,3 +140,4 @@ training_logs/
 # *.pt
 *.npy
 algo/cassiepede/benchmark/data
+checkpoints/

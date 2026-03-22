@@ -1,21 +1,22 @@
 export PYTHONPATH=.
-export WANDB_API_KEY=
+export WANDB_API_KEY= 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
 #### original training parameters
 # --force_prob 0.2 \
 # --poi_heading_range 1.05 \
 # --num_cassie_prob 0.2 0.8 \
 # --perturbation_force 30.0 \
 
+# bufefer_size: 采样采集多少数据 （你每一次“更新模型”之前，到底看了多少真实经验）
 python algo/cassiepede/trainer.py \
-  --n_collectors 8 \
+  --n_collectors 12 \
   --n_evaluators 0 \
-  --time_horizon 300 \
+  --time_horizon 500 \
   --max_steps 1000000 \
-  --buffer_size 8000 \
-  --eval_buffer_size 500 \
-  --evaluate_freq 10 \
-  --num_epoch 4 \
-  --mini_batch_size 64 \
+  --buffer_size 10000 \
+  --eval_buffer_size 1000 \
+  --evaluate_freq 4 \
+  --num_epoch 5 \
+  --mini_batch_size 32 \
   --hidden_dim 64 \
   --lstm_hidden_dim 64 \
   --lstm_num_layers 2 \
@@ -28,13 +29,15 @@ python algo/cassiepede/trainer.py \
   --project_name roadrunner_cassiepede \
   --device cpu \
   --position_offset 1.0 \
-  --poi_heading_range 0.05 \
+  --poi_position_offset 1.5 \
+  --poi_heading_range 1.05 \
   --gamma 0.95 \
   --std 0.13 \
   --entropy_coef 0.01 \
-  --num_cassie_prob 1.0 \
-  --perturbation_force 0.0 \
-  --force_prob 0.2 \
+  --num_cassie_prob 1 1 1 \
+  --perturbation_force 50.0 \
+  --perturbation_torque 25.0 \
+  --force_prob 0.1 \
   --cmd_noise 0.0 0.0 0.0 \
   --cmd_noise_prob 0.0 \
   --wandb_mode online \

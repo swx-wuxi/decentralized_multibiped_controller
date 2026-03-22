@@ -301,12 +301,14 @@ def main():
         # ===== PROFILE: training wall time start =====
         t_train_start = time.time()
         # ===== PROFILE END =====
-
+        
+        #******** Update the agent with the collected data **********
         batch = get_batched_episodes(episodes)
 
         actor_loss, entropy_loss, mirror_loss, critic_loss, kl, num_batches, train_epoch = \
             agent.update(batch, total_steps, check_kl=args.kl_check_min_itr <= iterations)
-        
+        #******** Update the agent with the collected data **********
+         
         # ===== PROFILE: make GPU timing accurate =====
         if torch.cuda.is_available():
             torch.cuda.synchronize()
