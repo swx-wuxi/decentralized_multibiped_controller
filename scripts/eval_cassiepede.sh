@@ -6,7 +6,7 @@ python algo/cassiepede/evaluation.py \
   --seed 0 \
   --time_horizon 1000 \
   --project_name roadrunner_cassiepede \
-  --num_cassie_prob 0 1\
+  --num_cassie_prob 1 0\
   --position_offset 1.0 \
   --poi_heading_range 1.05 \
   --poi_position_offset 1.5 \

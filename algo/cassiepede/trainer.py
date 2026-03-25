@@ -105,6 +105,16 @@ def main():
 
     run, iterations, total_steps, trajectory_count = init_logger(args, agent)
 
+    #### 手动保存 .yaml文件
+    import yaml
+
+    config_path = os.path.join(args.checkpoint_dir, f'config-{run.name}.yaml')
+    with open(config_path, 'w') as f:
+        yaml.dump(vars(args), f)
+
+    print(f"[SAVE] config saved to: {config_path}")
+    #### 手动保存 .yaml文件
+    
     prev_save_steps = 0
 
     # wandb.watch(models=agent.actor, log_freq=1)

@@ -27,7 +27,7 @@ python algo/cassiepede/trainer.py \
   --use_grad_clip \
   --reward_name locomotion_cassiepede_feetairtime_modified \
   --project_name roadrunner_cassiepede \
-  --device cpu \
+  --device cuda:0 \
   --position_offset 1.0 \
   --poi_position_offset 1.5 \
   --poi_heading_range 1.05 \
