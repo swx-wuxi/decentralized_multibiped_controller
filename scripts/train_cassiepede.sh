@@ -15,7 +15,7 @@ python algo/cassiepede/trainer.py \
   --buffer_size 10000 \
   --eval_buffer_size 1000 \
   --evaluate_freq 4 \
-  --num_epoch 5 \
+  --num_epoch 1 \
   --mini_batch_size 32 \
   --hidden_dim 64 \
   --lstm_hidden_dim 64 \
@@ -40,7 +40,7 @@ python algo/cassiepede/trainer.py \
   --force_prob 0.1 \
   --cmd_noise 0.0 0.0 0.0 \
   --cmd_noise_prob 0.0 \
-  --wandb_mode online \
+  --wandb_mode offline \
   --state_history_size 1 \
   --actor_name Actor_LSTM_v2 \
   --critic_name Critic_LSTM_v2 \

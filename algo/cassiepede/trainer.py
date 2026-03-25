@@ -105,7 +105,7 @@ def main():
 
     run, iterations, total_steps, trajectory_count = init_logger(args, agent)
 
-    #### 手动保存 .yaml文件
+    ##### 手动保存 .yaml文件， 然后记录基本的日志   #####
     import yaml
 
     config_path = os.path.join(args.checkpoint_dir, f'config-{run.name}.yaml')
@@ -113,8 +113,18 @@ def main():
         yaml.dump(vars(args), f)
 
     print(f"[SAVE] config saved to: {config_path}")
-    #### 手动保存 .yaml文件
-    
+
+    import csv
+
+    os.makedirs('training_logs', exist_ok=True)
+    csv_path = os.path.join('training_logs', f'train_log-{run.name}.csv')
+
+    csv_file = open(csv_path, 'w', newline='')
+    csv_writer = csv.writer(csv_file)
+
+    print(f"[LOG] training log will be saved to: {csv_path}")
+    #### 手动保存 .yaml文件并记录日志  #####
+
     prev_save_steps = 0
 
     # wandb.watch(models=agent.actor, log_freq=1)
@@ -317,6 +327,19 @@ def main():
 
         actor_loss, entropy_loss, mirror_loss, critic_loss, kl, num_batches, train_epoch = \
             agent.update(batch, total_steps, check_kl=args.kl_check_min_itr <= iterations)
+
+        csv_writer.writerow([
+            total_steps,
+            iterations,
+            mean_train_rewards,
+            mean_train_lens,
+            actor_loss,
+            critic_loss,
+            kl,
+            time_collecting.total_seconds(),
+        ])
+
+        csv_file.flush()
         #******** Update the agent with the collected data **********
          
         # ===== PROFILE: make GPU timing accurate =====
